@@ -1,0 +1,182 @@
+<%- include('partials/header', { title: 'Home', user: user }) %>
+
+<!-- Hero Section with Gradient Background -->
+<div class="hero-section text-center d-flex align-items-center justify-content-center vh-100 text-white"
+  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+  <div class="container">
+    <div class="hero-content p-4 rounded" style="background-color: rgba(255,255,255,0.1); backdrop-filter: blur(5px);">
+      <h1 class="display-4 font-weight-bold mb-4 animate__animated animate__fadeInDown">Welcome to WriteAway</h1>
+      <p class="lead mb-4 animate__animated animate__fadeIn animate__delay-1s">Where your thoughts find their voice</p>
+      
+      <% if (user) { %>
+        <div class="animate__animated animate__fadeIn animate__delay-2s">
+          <p class="mb-4">
+            Hello, <span class="username font-weight-bold text-warning"><%= user.username %></span>! Ready to write?
+          </p>
+          <a class="btn btn-light btn-lg mr-2 px-4 py-2 rounded-pill shadow" href="/user/profile">
+            <i class="fas fa-user mr-2"></i> Your Profile
+          </a>
+          <a class="btn btn-outline-light btn-lg px-4 py-2 rounded-pill" href="/posts/new">
+            <i class="fas fa-plus mr-2"></i> New Post
+          </a>
+        </div>
+      <% } else { %>
+        <div class="animate__animated animate__fadeIn animate__delay-2s">
+          <p class="mb-4">Join our community of writers and thinkers</p>
+          <a class="btn btn-light btn-lg mr-3 px-4 py-2 rounded-pill shadow" href="/auth/login">
+            <i class="fas fa-sign-in-alt mr-2"></i> Login
+          </a>
+          <a class="btn btn-outline-light btn-lg px-4 py-2 rounded-pill" href="/auth/register">
+            <i class="fas fa-user-plus mr-2"></i> Register
+          </a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section with Cards -->
+<div class="container my-5 py-4">
+  <h2 class="text-center mb-5 display-5 font-weight-bold" style="color: #764ba2;">
+    <i class="fas fa-star mr-2"></i> Why Choose WriteAway?
+  </h2>
+  
+  <div class="row g-4">
+    <!-- Feature 1 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #f8f1ff;">
+            <i class="fas fa-lock fa-2x" style="color: #764ba2;"></i>
+          </div>
+          <h4 class="card-title mb-3">Secure Authentication</h4>
+          <p class="card-text text-muted">
+            Safe and reliable login system to protect your account and data.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feature 2 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #f0f7ff;">
+            <i class="fas fa-user-shield fa-2x" style="color: #667eea;"></i>
+          </div>
+          <h4 class="card-title mb-3">Smart Authorization</h4>
+          <p class="card-text text-muted">
+            Different access levels for different users to keep things organized.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feature 3 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #fff4f4;">
+            <i class="fas fa-comments fa-2x" style="color: #ff6b6b;"></i>
+          </div>
+          <h4 class="card-title mb-3">Interactive Comments</h4>
+          <p class="card-text text-muted">
+            Engage with other users through our comment system on every post.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feature 4 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #f5fff0;">
+            <i class="fas fa-upload fa-2x" style="color: #51cf66;"></i>
+          </div>
+          <h4 class="card-title mb-3">File Uploads</h4>
+          <p class="card-text text-muted">
+            Upload multiple files to enhance your blog posts and profile.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feature 5 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #fff9f0;">
+            <i class="fas fa-edit fa-2x" style="color: #ff922b;"></i>
+          </div>
+          <h4 class="card-title mb-3">Rich Text Editor</h4>
+          <p class="card-text text-muted">
+            Create beautiful posts with our easy-to-use formatting tools.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feature 6 -->
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+        <div class="card-body text-center p-4">
+          <div class="icon-circle mb-4 mx-auto" style="background-color: #f0f8ff;">
+            <i class="fas fa-users fa-2x" style="color: #339af0;"></i>
+          </div>
+          <h4 class="card-title mb-3">User Profiles</h4>
+          <p class="card-text text-muted">
+            Customize your profile to showcase your personality and posts.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Call to Action Section -->
+<div class="py-5" style="background-color: #f8f9fa;">
+  <div class="container text-center py-4">
+    <h3 class="mb-4">Ready to start writing with WriteAway?</h3>
+    <% if (user) { %>
+      <a href="/posts/new" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow">
+        <i class="fas fa-pen-fancy mr-2"></i> Create Your First Post
+      </a>
+    <% } else { %>
+      <a href="/auth/register" class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow">
+        <i class="fas fa-user-plus mr-2"></i> Join Now
+      </a>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .icon-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+  }
+  
+  .transition-all {
+    transition: all 0.3s ease;
+  }
+  
+  .hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .username {
+    color: #ffc107;
+  }
+</style>
+
+<%- include('partials/footer') %>
