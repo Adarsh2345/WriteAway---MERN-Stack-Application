@@ -1,11 +1,15 @@
 <%- include('partials/header', { title: 'Edit Profile', user: user }) %>
 
-<div class="container mt-5">
-  <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-      <h2 class="mb-0">Edit Profile</h2>
-    </div>
-    <div class="card-body">
+<div class="container" style="padding-top: 3rem; padding-bottom: 3rem; max-width: 560px;">
+  <h1 class="display-6 mb-4">Edit profile</h1>
+  <div class="card">
+    <div class="card-body p-4">
+      <% if (error) { %>
+      <div class="alert alert-danger" role="alert"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+      <div class="alert alert-success" role="alert"><%= success %></div>
+      <% } %>
       <form
         action="/user/edit"
         method="POST"
@@ -36,12 +40,10 @@
         </div>
         <div class="mb-3">
           <label for="bio" class="form-label">Bio</label>
-          <textarea class="form-control" name="bio" id="bio" rows="3">
-<%= user.bio %></textarea
-          >
+          <textarea class="form-control" name="bio" id="bio" rows="3"><%= user.bio %></textarea>
         </div>
-        <div class="mb-3">
-          <label for="profilePicture" class="form-label">Profile Picture</label>
+        <div class="mb-4">
+          <label for="profilePicture" class="form-label">Profile picture</label>
           <input
             class="form-control"
             type="file"
@@ -54,21 +56,19 @@
             <img
               src="<%= user.profilePicture.url %>"
               alt="Profile Picture"
-              class="img-thumbnail"
+              class="rounded-circle"
               id="currentProfilePicture"
-              style="max-width: 150px"
+              style="width: 90px; height: 90px; object-fit: cover; border: 1px solid var(--line);"
             />
             <% } %>
             <img
               id="image-preview"
-              class="img-thumbnail mt-2"
-              style="max-width: 150px; display: none"
+              class="rounded-circle mt-2"
+              style="width: 90px; height: 90px; object-fit: cover; display: none; border: 1px solid var(--line);"
             />
           </div>
         </div>
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i> Update Profile
-        </button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
       </form>
     </div>
   </div>
