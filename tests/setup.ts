@@ -11,7 +11,12 @@ export async function startTestApp() {
   const mongodbUrl = mongoServer.getUri("writeaway-test");
   await mongoose.connect(mongodbUrl);
 
-  const app = createApp({ sessionSecret: "test-secret", mongodbUrl });
+  const app = createApp({
+    sessionSecret: "test-secret",
+    mongodbUrl,
+    isProduction: false,
+    clientUrl: "http://localhost:5173",
+  });
   return app;
 }
 

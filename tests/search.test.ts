@@ -55,24 +55,27 @@ describe("search and tags", () => {
     const res = await request(app).get("/posts?tag=python");
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("Getting Started with Python");
-    expect(res.text).not.toContain("Learning JavaScript Closures");
+    const titles = res.body.posts.map((p: { title: string }) => p.title);
+    expect(titles).toContain("Getting Started with Python");
+    expect(titles).not.toContain("Learning JavaScript Closures");
   });
 
   it("finds posts via full-text search", async () => {
     const res = await request(app).get("/posts?q=closures");
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("Learning JavaScript Closures");
-    expect(res.text).not.toContain("Career Advice for New Grads");
+    const titles = res.body.posts.map((p: { title: string }) => p.title);
+    expect(titles).toContain("Learning JavaScript Closures");
+    expect(titles).not.toContain("Career Advice for New Grads");
   });
 
   it("combines a tag filter and a text search", async () => {
     const res = await request(app).get("/posts?tag=tutorial&q=python");
 
     expect(res.status).toBe(200);
-    expect(res.text).toContain("Getting Started with Python");
-    expect(res.text).not.toContain("Learning JavaScript Closures");
+    const titles = res.body.posts.map((p: { title: string }) => p.title);
+    expect(titles).toContain("Getting Started with Python");
+    expect(titles).not.toContain("Learning JavaScript Closures");
   });
 
   it("paginates results", async () => {
@@ -94,6 +97,10 @@ describe("search and tags", () => {
 
     expect(pageOne.status).toBe(200);
     expect(pageTwo.status).toBe(200);
-    expect(pageOne.text).not.toBe(pageTwo.text);
+    expect(pageOne.body.currentPage).toBe(1);
+    expect(pageTwo.body.currentPage).toBe(2);
+    const pageOneIds = pageOne.body.posts.map((p: { _id: string }) => p._id);
+    const pageTwoIds = pageTwo.body.posts.map((p: { _id: string }) => p._id);
+    expect(pageOneIds).not.toEqual(pageTwoIds);
   });
 });
