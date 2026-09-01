@@ -4,6 +4,9 @@ import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { PostsList } from "./pages/PostsList";
+import { NewPost } from "./pages/NewPost";
+import { EditPost } from "./pages/EditPost";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -13,6 +16,22 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/posts" element={<PostsList />} />
+        <Route
+          path="/posts/new"
+          element={
+            <ProtectedRoute>
+              <NewPost />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/posts/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditPost />
+            </ProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   );
