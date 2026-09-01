@@ -6,6 +6,7 @@ import { Register } from "./pages/Register";
 import { PostsList } from "./pages/PostsList";
 import { NewPost } from "./pages/NewPost";
 import { EditPost } from "./pages/EditPost";
+import { PostDetail } from "./pages/PostDetail";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/posts" element={<PostsList />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
         <Route
           path="/posts/new"
           element={
