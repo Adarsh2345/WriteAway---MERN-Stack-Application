@@ -20,6 +20,10 @@ export const env = {
   sessionSecret: process.env.SESSION_SECRET || "dev-only-insecure-secret-change-me",
   isProduction: process.env.NODE_ENV === "production",
   port: process.env.PORT ? Number(process.env.PORT) : 3000,
+  // Only used in development, to allow the Vite dev server (a different
+  // origin) to make cross-origin requests with credentials. Not needed in
+  // production, where the built React app is served from this same process.
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
 };
 
 if (env.isProduction && !process.env.SESSION_SECRET) {

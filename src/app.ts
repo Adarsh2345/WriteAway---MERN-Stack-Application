@@ -3,7 +3,12 @@ import mongoose from "mongoose";
 import { createApp } from "./createApp";
 import { env } from "./config/env";
 
-const app = createApp({ sessionSecret: env.sessionSecret, mongodbUrl: env.mongodbUrl });
+const app = createApp({
+  sessionSecret: env.sessionSecret,
+  mongodbUrl: env.mongodbUrl,
+  isProduction: env.isProduction,
+  clientUrl: env.clientUrl,
+});
 
 mongoose
   .connect(env.mongodbUrl)
