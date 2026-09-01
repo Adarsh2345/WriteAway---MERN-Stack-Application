@@ -1,9 +1,8 @@
 import { RequestHandler } from "express";
 import asyncHandler from "express-async-handler";
 import sanitizeHtml from "sanitize-html";
-import { Types } from "mongoose";
+import Post, { IPost } from "../models/Post";
 import File from "../models/File";
-import Post from "../models/Post";
 import cloudinary from "../config/cloudinary";
 
 const MAX_TITLE_LENGTH = 150;
@@ -11,9 +10,9 @@ const MAX_CONTENT_LENGTH = 20000;
 const POSTS_PER_PAGE = 9;
 
 // The Quill editor produces rich-text HTML. We sanitize it before saving (and
-// again defensively before rendering) so a post can't inject a <script> tag or
-// other malicious markup — a classic stored-XSS risk with any "render raw HTML
-// from user input" feature.
+// again defensively before every response that includes it) so a post can't
+// inject a <script> tag or other malicious markup — a classic stored-XSS
+// risk with any "render raw HTML from user input" feature.
 function sanitizePostContent(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "u", "s"]),
@@ -42,16 +41,27 @@ function getUploadedFiles(req: Parameters<RequestHandler>[0]): Express.Multer.Fi
   return (req.files as Express.Multer.File[] | undefined) ?? [];
 }
 
-// Rendering post form
-export const getPostForm: RequestHandler = asyncHandler((req, res) => {
-  res.render("newPost", {
-    title: "Create Post",
-    user: req.user,
-    error: "",
-    success: "",
-    formValues: { title: "", content: "", tags: "" },
-  });
-});
+// Fetches a post with its author and comments (each comment's own author too)
+// populated, and its content sanitized — used by both getPostById and by
+// addComment's response, so there's exactly one place that does this, not
+// two copies that could drift out of sync.
+export async function findPostWithComments(id: string): Promise<IPost | null> {
+  const post = await Post.findById(id)
+    .populate("author", "username")
+    .populate({
+      path: "comments",
+      populate: {
+        path: "author",
+        model: "User",
+        select: "username",
+      },
+    });
+
+  if (!post) return null;
+
+  post.content = sanitizePostContent(post.content);
+  return post;
+}
 
 // Creating new post
 export const createPost: RequestHandler = asyncHandler(async (req, res) => {
@@ -62,28 +72,18 @@ export const createPost: RequestHandler = asyncHandler(async (req, res) => {
   };
   const files = getUploadedFiles(req);
 
-  // Re-render the form with an error, but keep whatever the user already
-  // typed (title, content, tags) so a validation failure doesn't wipe their
-  // work — only the image picker can't be refilled (browsers don't allow
-  // pre-populating a file input for security reasons), so that one field
-  // does need to be re-selected if the user wants to retry with images.
-  const renderError = (error: string) =>
-    res.render("newPost", {
-      title: "Create Post",
-      user: req.user,
-      error,
-      success: "",
-      formValues: { title: title ?? "", content: content ?? "", tags: tags ?? "" },
-    });
+  const fail = (status: number, error: string): void => {
+    res.status(status).json({ error });
+  };
 
   if (!title || !content) {
-    return renderError("Title and content are required");
+    return fail(400, "Title and content are required");
   }
   if (title.length > MAX_TITLE_LENGTH) {
-    return renderError(`Title must be ${MAX_TITLE_LENGTH} characters or fewer`);
+    return fail(400, `Title must be ${MAX_TITLE_LENGTH} characters or fewer`);
   }
   if (content.length > MAX_CONTENT_LENGTH) {
-    return renderError(`Content must be ${MAX_CONTENT_LENGTH} characters or fewer`);
+    return fail(400, `Content must be ${MAX_CONTENT_LENGTH} characters or fewer`);
   }
 
   // Images are optional — a post can be published as text-only.
@@ -107,8 +107,9 @@ export const createPost: RequestHandler = asyncHandler(async (req, res) => {
     tags: parseTags(tags),
   });
   await newPost.save();
+  await newPost.populate("author", "username");
 
-  res.redirect("/posts?created=1");
+  res.status(201).json({ post: newPost });
 });
 
 // Get all posts — supports free-text search (?q=), tag filtering (?tag=), and pagination (?page=)
@@ -135,73 +136,19 @@ export const getPosts: RequestHandler = asyncHandler(async (req, res) => {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / POSTS_PER_PAGE));
 
-  res.render("posts", {
-    title: "Posts",
-    posts,
-    user: req.user,
-    success: req.query.created ? "Post created successfully." : "",
-    error: "",
-    totalCount,
-    totalPages,
-    currentPage: page,
-    allTags,
-    q: q || "",
-    tag: tag || "",
-  });
+  res.json({ posts, totalCount, totalPages, currentPage: page, allTags });
 });
 
 // Get post by id
 export const getPostById: RequestHandler = asyncHandler(async (req, res) => {
-  const post = await Post.findById(req.params.id)
-    .populate("author", "username")
-    .populate({
-      path: "comments",
-      populate: {
-        path: "author",
-        model: "User",
-        select: "username",
-      },
-    });
+  const post = await findPostWithComments(req.params.id);
 
   if (!post) {
-    return res.status(404).render("error", {
-      title: "Post Not Found",
-      error: "Post not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Post not found" });
+    return;
   }
 
-  res.render("postDetails", {
-    title: "Post",
-    post,
-    // The content was already sanitized when the post was created/edited, but
-    // we sanitize again on the way out too — belt-and-suspenders, in case old
-    // data was written before sanitization existed.
-    sanitizedContent: sanitizePostContent(post.content),
-    user: req.user,
-    success: "",
-    error: "",
-  });
-});
-
-// Get edit post form
-export const getEditPostForm: RequestHandler = asyncHandler(async (req, res) => {
-  const post = await Post.findById(req.params.id);
-
-  if (!post) {
-    return res.status(404).render("error", {
-      title: "Post Not Found",
-      error: "Post not found",
-      user: req.user,
-    });
-  }
-  res.render("editPost", {
-    title: "Edit Post",
-    post,
-    user: req.user,
-    error: "",
-    success: "",
-  });
+  res.json({ post });
 });
 
 // Update post
@@ -215,50 +162,30 @@ export const updatePost: RequestHandler = asyncHandler(async (req, res) => {
 
   const post = await Post.findById(req.params.id);
   if (!post) {
-    return res.status(404).render("error", {
-      title: "Post Not Found",
-      error: "Post not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Post not found" });
+    return;
   }
 
   if (post.author.toString() !== req.user!._id.toString()) {
-    return res.status(403).render("error", {
-      title: "Not Authorized",
-      error: "You are not authorized to edit this post",
-      user: req.user,
-    });
+    res.status(403).json({ error: "You are not authorized to edit this post" });
+    return;
   }
 
-  // Re-render with whatever the user just typed (not the saved values), so a
-  // validation failure doesn't discard their edits.
   if (title !== undefined) post.title = title;
-  if (content !== undefined) post.content = content;
   if (tags !== undefined) post.tags = parseTags(tags);
 
   if (title && title.length > MAX_TITLE_LENGTH) {
-    return res.render("editPost", {
-      title: "Edit Post",
-      post,
-      user: req.user,
-      error: `Title must be ${MAX_TITLE_LENGTH} characters or fewer`,
-      success: "",
-    });
+    res.status(400).json({ error: `Title must be ${MAX_TITLE_LENGTH} characters or fewer` });
+    return;
   }
   if (content && content.length > MAX_CONTENT_LENGTH) {
-    return res.render("editPost", {
-      title: "Edit Post",
-      post,
-      user: req.user,
-      error: `Content must be ${MAX_CONTENT_LENGTH} characters or fewer`,
-      success: "",
-    });
+    res.status(400).json({ error: `Content must be ${MAX_CONTENT_LENGTH} characters or fewer` });
+    return;
   }
 
-  // post.title/content/tags were already set above (to preserve user input
-  // through the validation checks) — just sanitize the content now that it's
-  // confirmed valid and about to be saved.
-  post.content = sanitizePostContent(post.content);
+  if (content !== undefined) {
+    post.content = sanitizePostContent(content);
+  }
 
   if (files.length > 0) {
     await Promise.all(post.images.map((image) => cloudinary.uploader.destroy(image.public_id)));
@@ -276,28 +203,24 @@ export const updatePost: RequestHandler = asyncHandler(async (req, res) => {
   }
 
   await post.save();
-  res.redirect(`/posts/${post._id}`);
+  await post.populate("author", "username");
+
+  res.json({ post });
 });
 
 // Delete post
 export const deletePost: RequestHandler = asyncHandler(async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) {
-    return res.status(404).render("error", {
-      title: "Post Not Found",
-      error: "Post not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Post not found" });
+    return;
   }
   if (post.author.toString() !== req.user!._id.toString()) {
-    return res.status(403).render("error", {
-      title: "Not Authorized",
-      error: "You are not authorized to delete this post",
-      user: req.user,
-    });
+    res.status(403).json({ error: "You are not authorized to delete this post" });
+    return;
   }
 
   await Promise.all(post.images.map((image) => cloudinary.uploader.destroy(image.public_id)));
   await Post.findByIdAndDelete(req.params.id);
-  res.redirect("/posts");
+  res.status(204).end();
 });
