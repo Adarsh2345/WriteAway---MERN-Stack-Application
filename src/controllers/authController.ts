@@ -7,13 +7,11 @@ import User from "../models/User";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
 
-// Render login page
-export const getLogin: RequestHandler = asyncHandler((req, res) => {
-  res.render("login", {
-    title: "Login",
-    error: "",
-    user: req.user,
-  });
+// Tells the frontend whether anyone is currently logged in. Always returns
+// 200 — this is a status check, not an authorization gate, so a logged-out
+// visitor gets { user: null } rather than an error.
+export const getMe: RequestHandler = asyncHandler((req, res) => {
+  res.json({ user: req.user ?? null });
 });
 
 // Login logic
@@ -25,29 +23,16 @@ export const login: RequestHandler = asyncHandler(async (req, res, next) => {
         return next(err);
       }
       if (!user) {
-        return res.render("login", {
-          title: "Login",
-          user: req.user,
-          error: info?.message ?? "Login failed",
-        });
+        return res.status(401).json({ error: info?.message ?? "Login failed" });
       }
       req.logIn(user, (loginErr) => {
         if (loginErr) {
           return next(loginErr);
         }
-        return res.redirect("/user/profile");
+        return res.json({ user });
       });
     }
   )(req, res, next);
-});
-
-// Get register page
-export const getRegister: RequestHandler = asyncHandler((req, res) => {
-  res.render("register", {
-    title: "Register",
-    user: req.user,
-    error: "",
-  });
 });
 
 // Register logic
@@ -58,34 +43,38 @@ export const register: RequestHandler = asyncHandler(async (req, res) => {
     password?: string;
   };
 
-  const renderError = (error: string) =>
-    res.render("register", { title: "Register", user: req.user, error });
+  const fail = (status: number, error: string): void => {
+    res.status(status).json({ error });
+  };
 
   if (!username || !email || !password) {
-    return renderError("Username, email, and password are all required");
+    return fail(400, "Username, email, and password are all required");
   }
   if (!EMAIL_REGEX.test(email)) {
-    return renderError("Please enter a valid email address");
+    return fail(400, "Please enter a valid email address");
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return renderError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
+    return fail(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
   }
 
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return renderError("User already exists");
+      return fail(400, "User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({
+    const user = await User.create({
       username,
       email,
       password: hashedPassword,
     });
-    res.redirect("/auth/login");
+    // Registering does not log the user in automatically (matches the
+    // previous behavior, which never called req.logIn here) — the frontend
+    // sends them to the login page after this.
+    res.status(201).json({ user });
   } catch (error) {
-    renderError((error as Error).message);
+    fail(400, (error as Error).message);
   }
 });
 
@@ -95,6 +84,6 @@ export const logout: RequestHandler = asyncHandler((req, res, next) => {
     if (err) {
       return next(err);
     }
-    res.redirect("/auth/login");
+    res.status(204).end();
   });
 });

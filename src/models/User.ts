@@ -58,6 +58,16 @@ const userSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    toJSON: {
+      // Password should never leave the server, even by accident — this
+      // strips it out of every JSON response automatically, so an API route
+      // returning a user object can't leak it just by forgetting a
+      // .select("-password").
+      transform: (_doc, ret) => {
+        delete ret.password;
+        return ret;
+      },
+    },
   }
 );
 
