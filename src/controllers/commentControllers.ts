@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import asyncHandler from "express-async-handler";
 import Comment from "../models/Comment";
 import Post from "../models/Post";
+import { findPostWithComments } from "./postControllers";
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -12,29 +13,16 @@ export const addComment: RequestHandler = asyncHandler(async (req, res) => {
 
   const post = await Post.findById(postId);
   if (!post) {
-    return res.status(404).render("error", {
-      title: "Post Not Found",
-      error: "Post not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Post not found" });
+    return;
   }
   if (!content || !content.trim()) {
-    return res.render("postDetails", {
-      title: "Post",
-      post,
-      user: req.user,
-      error: "Comment cannot be empty",
-      success: "",
-    });
+    res.status(400).json({ error: "Comment cannot be empty" });
+    return;
   }
   if (content.length > MAX_COMMENT_LENGTH) {
-    return res.render("postDetails", {
-      title: "Post",
-      post,
-      user: req.user,
-      error: `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`,
-      success: "",
-    });
+    res.status(400).json({ error: `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer` });
+    return;
   }
 
   const comment = new Comment({
@@ -46,35 +34,13 @@ export const addComment: RequestHandler = asyncHandler(async (req, res) => {
 
   post.comments.push(comment._id as typeof post.comments[number]);
   await post.save();
+  await comment.populate("author", "username");
 
-  res.redirect(`/posts/${postId}`);
-});
-
-// Get comment form
-export const getCommentForm: RequestHandler = asyncHandler(async (req, res) => {
-  const comment = await Comment.findById(req.params.id);
-  if (!comment) {
-    return res.status(404).render("error", {
-      title: "Comment Not Found",
-      error: "Comment not found",
-      user: req.user,
-    });
-  }
-  if (comment.author.toString() !== req.user!._id.toString()) {
-    return res.status(403).render("error", {
-      title: "Not Authorized",
-      error: "You are not authorized to edit this comment",
-      user: req.user,
-    });
-  }
-
-  res.render("editComment", {
-    title: "Comment",
-    comment,
-    user: req.user,
-    error: "",
-    success: "",
-  });
+  // Return the refreshed, fully-populated post too, so the frontend can
+  // update its comment list from this one response instead of needing a
+  // second request.
+  const refreshedPost = await findPostWithComments(postId);
+  res.status(201).json({ comment, post: refreshedPost });
 });
 
 // Update comment
@@ -82,51 +48,36 @@ export const updateComment: RequestHandler = asyncHandler(async (req, res) => {
   const { content } = req.body as { content?: string };
   const comment = await Comment.findById(req.params.id);
   if (!comment) {
-    return res.status(404).render("error", {
-      title: "Comment Not Found",
-      error: "Comment not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Comment not found" });
+    return;
   }
   if (comment.author.toString() !== req.user!._id.toString()) {
-    return res.status(403).render("error", {
-      title: "Not Authorized",
-      error: "You are not authorized to edit this comment",
-      user: req.user,
-    });
+    res.status(403).json({ error: "You are not authorized to edit this comment" });
+    return;
   }
   if (content && content.length > MAX_COMMENT_LENGTH) {
-    return res.render("editComment", {
-      title: "Comment",
-      comment,
-      user: req.user,
-      error: `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`,
-      success: "",
-    });
+    res.status(400).json({ error: `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer` });
+    return;
   }
 
   comment.content = content || comment.content;
   await comment.save();
-  res.redirect(`/posts/${comment.post}`);
+  await comment.populate("author", "username");
+
+  res.json({ comment });
 });
 
 // Delete comment
 export const deleteComment: RequestHandler = asyncHandler(async (req, res) => {
   const comment = await Comment.findById(req.params.id);
   if (!comment) {
-    return res.status(404).render("error", {
-      title: "Comment Not Found",
-      error: "Comment not found",
-      user: req.user,
-    });
+    res.status(404).json({ error: "Comment not found" });
+    return;
   }
   if (comment.author.toString() !== req.user!._id.toString()) {
-    return res.status(403).render("error", {
-      title: "Not Authorized",
-      error: "You are not authorized to delete this comment",
-      user: req.user,
-    });
+    res.status(403).json({ error: "You are not authorized to delete this comment" });
+    return;
   }
   await Comment.findByIdAndDelete(req.params.id);
-  res.redirect(`/posts/${comment.post}`);
+  res.status(204).end();
 });
