@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import * as postsApi from "../api/posts";
 import * as commentsApi from "../api/comments";
 import { useAuth } from "../context/AuthContext";
+import { ApiError } from "../api/client";
+import { ErrorPage } from "./ErrorPage";
 import type { Comment, PostDetail as PostDetailType } from "../types";
 
 export function PostDetail() {
@@ -10,15 +12,22 @@ export function PostDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState<PostDetailType | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     if (!id) return;
-    postsApi.getPost(id).then(({ post }) => setPost(post));
+    postsApi
+      .getPost(id)
+      .then(({ post }) => setPost(post))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 404) setNotFound(true);
+      });
   }, [id]);
 
+  if (notFound) return <ErrorPage message="Post not found" />;
   if (!post || !id) return null;
 
   const isOwner = user && user._id === post.author._id;

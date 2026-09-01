@@ -9,6 +9,7 @@ import { EditPost } from "./pages/EditPost";
 import { PostDetail } from "./pages/PostDetail";
 import { Profile } from "./pages/Profile";
 import { EditProfile } from "./pages/EditProfile";
+import { ErrorPage } from "./pages/ErrorPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<ErrorPage />} />
       </Route>
     </Routes>
   );
