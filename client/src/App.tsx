@@ -7,6 +7,8 @@ import { PostsList } from "./pages/PostsList";
 import { NewPost } from "./pages/NewPost";
 import { EditPost } from "./pages/EditPost";
 import { PostDetail } from "./pages/PostDetail";
+import { Profile } from "./pages/Profile";
+import { EditProfile } from "./pages/EditProfile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
@@ -31,6 +33,22 @@ function App() {
           element={
             <ProtectedRoute>
               <EditPost />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
             </ProtectedRoute>
           }
         />
