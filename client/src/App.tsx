@@ -1,12 +1,14 @@
-// Route table gets filled in as each page is built; this is a working shell
-// for now to confirm the design system is wired in correctly.
+import { Routes, Route } from "react-router-dom";
+import { Layout } from "./components/Layout";
+
+// Page routes get filled in as each page is built.
 function App() {
   return (
-    <div className="container" style={{ paddingTop: "3rem" }}>
-      <h1 className="display-5">WriteAway</h1>
-      <p className="text-muted">Design system check</p>
-      <button className="btn btn-primary">Primary button</button>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<div className="container" style={{ paddingTop: "3rem" }}>Home coming soon</div>} />
+      </Route>
+    </Routes>
   );
 }
 
