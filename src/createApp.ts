@@ -1,3 +1,4 @@
+import path from "path";
 import express, { Express } from "express";
 import cors from "cors";
 import passport from "passport";
@@ -61,6 +62,19 @@ export function createApp({
   app.use("/posts", postRoutes);
   app.use("/", commentRoutes);
   app.use("/user", userRoutes);
+
+  // API errors are always JSON, handled above this line. In production, the
+  // built React app is served from this same process (no separate frontend
+  // host, no CORS needed) — any request that didn't match an API route above
+  // falls through to it, and the catch-all below hands back index.html so
+  // React Router can handle client-side routes like /posts/:id directly.
+  if (isProduction) {
+    const clientDist = path.join(__dirname, "..", "client", "dist");
+    app.use(express.static(clientDist));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientDist, "index.html"));
+    });
+  }
 
   app.use(errorHandler);
 
