@@ -6,44 +6,17 @@ import File from "../models/File";
 import Comment from "../models/Comment";
 import cloudinary from "../config/cloudinary";
 
-// Get user profile
+// Get own profile, plus own posts and post count
 export const getUserProfile: RequestHandler = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user!._id).select("-password");
+  const user = await User.findById(req.user!._id);
   if (!user) {
-    return res.render("login", {
-      title: "Login",
-      user: req.user,
-      error: "User not found",
-    });
+    res.status(404).json({ error: "User not found" });
+    return;
   }
 
   const posts = await Post.find({ author: req.user!._id }).sort({ createdAt: -1 });
 
-  res.render("profile", {
-    title: "Profile",
-    user,
-    posts,
-    error: "",
-    postCount: posts.length,
-  });
-});
-
-// Get edit profile form
-export const getEditProfileForm: RequestHandler = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user!._id).select("-password");
-  if (!user) {
-    return res.render("login", {
-      title: "Login",
-      user: req.user,
-      error: "User not found",
-    });
-  }
-  res.render("editProfile", {
-    title: "Edit Profile",
-    user,
-    error: "",
-    success: "",
-  });
+  res.json({ user, posts, postCount: posts.length });
 });
 
 // Update profile
@@ -55,7 +28,7 @@ export const updateUserProfile: RequestHandler = asyncHandler(async (req, res) =
   };
   const user = await User.findById(req.user!._id);
   if (!user) {
-    res.status(404).json({ message: "User not found" });
+    res.status(404).json({ error: "User not found" });
     return;
   }
 
@@ -79,23 +52,15 @@ export const updateUserProfile: RequestHandler = asyncHandler(async (req, res) =
   }
 
   await user.save();
-  res.render("editProfile", {
-    title: "Edit Profile",
-    user,
-    error: "",
-    success: "Profile updated successfully",
-  });
+  res.json({ user });
 });
 
 // Delete user account
 export const deleteUserAccount: RequestHandler = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user!._id);
   if (!user) {
-    return res.render("login", {
-      title: "Login",
-      user: req.user,
-      error: "User not found",
-    });
+    res.status(404).json({ error: "User not found" });
+    return;
   }
 
   if (user.profilePicture?.public_id) {
@@ -120,5 +85,8 @@ export const deleteUserAccount: RequestHandler = asyncHandler(async (req, res) =
   }
 
   await User.findByIdAndDelete(req.user!._id);
-  res.redirect("/auth/register");
+
+  req.logout(() => {
+    res.status(204).end();
+  });
 });
